@@ -1,6 +1,6 @@
 import React from 'react';
 import axios from "axios"
-import { StyleSheet, Text, View, Alert, Dimensions, ActivityIndicator} from 'react-native';
+import { StyleSheet, Text, View, Alert, Dimensions, ActivityIndicator } from 'react-native';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Camera } from "expo-camera"
 import { Button } from "react-native-elements";
@@ -13,7 +13,9 @@ export default function CameraScreen({ navigation }) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [showSettings, setShowSettings] = React.useState(false);
   const [topGrid, setTopGrid] = React.useState(28);
-  const [bottomGrid, setBottomGrid] = React.useState(10)
+  const [bottomGrid, setBottomGrid] = React.useState(10);
+  const [ratio, setRatio] = React.useState("4:3");
+  const [isRatioCalc, setIsRatioCalc] = React.useState(false)
 
   const cameraRef = React.useRef();
 
@@ -22,6 +24,7 @@ export default function CameraScreen({ navigation }) {
       const { status } = await Camera.requestPermissionsAsync();
       setHasPermission(status === 'granted');
     })();
+    
   }, []);
 
   React.useLayoutEffect(() => {
@@ -76,7 +79,8 @@ export default function CameraScreen({ navigation }) {
             compress: 0.5
           }
         )
-
+        setUri(manipulatedImg.base64)
+        console.log(manipulatedImg.base64)
         translate(manipulatedImg.base64)
       }
     }
@@ -103,6 +107,37 @@ export default function CameraScreen({ navigation }) {
       setIsLoading(false);
     } catch (error) {
       console.error(error)
+    }
+  }
+
+  async function readyCam() {
+    if (!isRatioCalc) {
+      const { width, height } = Dimensions.get("window");
+      const screenRatio = width / height;
+      const ratios = await cameraRef.current.getSupportedRatiosAsync();
+
+      let desiredRatio = "";
+      let distances = {};
+      let realRatios = {};
+      let minDistance = null;
+      for (const ratio of ratios) {
+        const parts = ratio.split(':');
+        const realRatio = parseInt(parts[0]) / parseInt(parts[1]);
+        realRatios[ratio] = realRatio;
+        // ratio can't be taller than screen, so we don't want an abs()
+        const distance = screenRatio - realRatio;
+        distances[ratio] = realRatio;
+        if (minDistance == null) {
+          minDistance = ratio;
+        } else {
+          if (distance >= 0 && distance < distances[minDistance]) {
+            minDistance = ratio;
+          }
+        }
+      }
+      desiredRatio = minDistance;
+      setRatio(desiredRatio);
+      setIsRatioCalc(true);
     }
   }
 
@@ -139,7 +174,7 @@ export default function CameraScreen({ navigation }) {
             />
           </>
         ):(
-          <Camera ref={cameraRef} style={styles.camera} type={Camera.Constants.Type.back}>
+          <Camera onCameraReady={readyCam} ref={cameraRef} style={styles.camera} type={Camera.Constants.Type.back} ratio={ratio}>
             <View style={{ display: "flex", flexDirection: "row" }}>
               {[...generatePlaceholderArray(topGrid)].map((_, idx) => (
                 <View key={idx}>
