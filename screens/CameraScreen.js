@@ -1,6 +1,6 @@
 import React from 'react';
 import axios from "axios"
-import { StyleSheet, Text, View, Alert, Dimensions, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, Alert, Dimensions, ActivityIndicator, Modal, Image } from 'react-native';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Camera } from "expo-camera"
 import { Button } from "react-native-elements";
@@ -14,8 +14,8 @@ export default function CameraScreen({ navigation }) {
   const [showSettings, setShowSettings] = React.useState(false);
   const [topGrid, setTopGrid] = React.useState(28);
   const [bottomGrid, setBottomGrid] = React.useState(10);
-  const [ratio, setRatio] = React.useState("4:3");
-  const [isRatioCalc, setIsRatioCalc] = React.useState(false)
+  const [imageURI, setImageURI] = React.useState(null);
+  const [imagebase64, setImageBase64] = React.useState(null);
 
   const cameraRef = React.useRef();
 
@@ -68,7 +68,6 @@ export default function CameraScreen({ navigation }) {
     if (cameraRef) {
       const image = await cameraRef.current.takePictureAsync();
       cameraRef.current.pausePreview();
-
       if (image) {
         cameraRef.current.resumePreview();
         const manipulatedImg = await ImageManipulator.manipulateAsync(
@@ -79,15 +78,16 @@ export default function CameraScreen({ navigation }) {
             compress: 0.5
           }
         )
-        setUri(manipulatedImg.base64)
-        console.log(manipulatedImg.base64)
-        translate(manipulatedImg.base64)
+        const { base64, uri } = manipulatedImg;
+        setImageURI(uri)
+        setImageBase64(base64);
       }
     }
   }
 
-  async function translate(imageData) {
+  async function translate() {
     setIsLoading(true);
+    setImageURI(null);
     try {
       const response = await axios({
         headers: {
@@ -97,7 +97,7 @@ export default function CameraScreen({ navigation }) {
         url: "https://transbraille.herokuapp.com/translate/",
         method: "POST",
         data: {
-          braille: imageData
+          braille: imagebase64
         }
       })
 
@@ -110,35 +110,9 @@ export default function CameraScreen({ navigation }) {
     }
   }
 
-  async function readyCam() {
-    if (!isRatioCalc) {
-      const { width, height } = Dimensions.get("window");
-      const screenRatio = width / height;
-      const ratios = await cameraRef.current.getSupportedRatiosAsync();
-
-      let desiredRatio = "";
-      let distances = {};
-      let realRatios = {};
-      let minDistance = null;
-      for (const ratio of ratios) {
-        const parts = ratio.split(':');
-        const realRatio = parseInt(parts[0]) / parseInt(parts[1]);
-        realRatios[ratio] = realRatio;
-        // ratio can't be taller than screen, so we don't want an abs()
-        const distance = screenRatio - realRatio;
-        distances[ratio] = realRatio;
-        if (minDistance == null) {
-          minDistance = ratio;
-        } else {
-          if (distance >= 0 && distance < distances[minDistance]) {
-            minDistance = ratio;
-          }
-        }
-      }
-      desiredRatio = minDistance;
-      setRatio(desiredRatio);
-      setIsRatioCalc(true);
-    }
+  function retake() {
+    setImageURI(null);
+    setImageBase64(null);
   }
 
   function generatePlaceholderArray(length) {
@@ -147,6 +121,41 @@ export default function CameraScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      <Modal
+          animationType="slide"
+          transparent={false}
+          visible={imageURI ? true : false}
+          style={{ backgroundColor: "red" }}
+          styl
+          onRequestClose={() => {
+        Alert.alert('Modal has been closed.');
+      }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <Image source={{ uri: imageURI }} style={{ width: "100%", height: 300, resizeMode: "contain" }} />
+          <View style={styles.buttonGroupContainer}>
+            <Button
+              type="solid"
+              icon={{
+                name: "x",
+                type: "feather",
+                color: "white"
+              }}
+              buttonStyle={{ backgroundColor: "red" }}
+              onPress={() => retake()}
+            />
+            <Button
+              type="solid"
+              icon={{
+                name: "check",
+                type: "feather",
+                color: "white"
+              }}
+              buttonStyle={{ backgroundColor: "#27AE60" }}
+              onPress={() => translate()}
+            />
+          </View>
+        </View>
+      </Modal>
       {isLoading ? <ActivityIndicator size="large" color={Theme.colors.primaryLight} /> : (
        <>
         {showSettings ? (
@@ -205,6 +214,14 @@ const styles = StyleSheet.create({
   camera: {
     width: "100%",
     height: 300,
+  },
+  buttonGroupContainer: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+    alignItems: "center",
+    width: "30%",
+    paddingVertical: 16
   },
   grid: {
     borderWidth: 1,
