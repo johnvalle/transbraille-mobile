@@ -1,6 +1,6 @@
 import React from 'react';
 import axios from "axios"
-import { StyleSheet, Text, View, Alert, Dimensions, ActivityIndicator} from 'react-native';
+import { StyleSheet, Text, View, Alert, Dimensions, ActivityIndicator, Modal, Image } from 'react-native';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Camera } from "expo-camera"
 import { Button } from "react-native-elements";
@@ -13,7 +13,9 @@ export default function CameraScreen({ navigation }) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [showSettings, setShowSettings] = React.useState(false);
   const [topGrid, setTopGrid] = React.useState(28);
-  const [bottomGrid, setBottomGrid] = React.useState(10)
+  const [bottomGrid, setBottomGrid] = React.useState(10);
+  const [imageURI, setImageURI] = React.useState(null);
+  const [imagebase64, setImageBase64] = React.useState(null);
 
   const cameraRef = React.useRef();
 
@@ -65,7 +67,6 @@ export default function CameraScreen({ navigation }) {
     if (cameraRef) {
       const image = await cameraRef.current.takePictureAsync();
       cameraRef.current.pausePreview();
-
       if (image) {
         cameraRef.current.resumePreview();
         const manipulatedImg = await ImageManipulator.manipulateAsync(
@@ -76,14 +77,16 @@ export default function CameraScreen({ navigation }) {
             compress: 0.5
           }
         )
-
-        translate(manipulatedImg.base64)
+        const { base64, uri } = manipulatedImg;
+        setImageURI(uri)
+        setImageBase64(base64);
       }
     }
   }
 
-  async function translate(imageData) {
+  async function translate() {
     setIsLoading(true);
+    setImageURI(null);
     try {
       const response = await axios({
         headers: {
@@ -93,7 +96,7 @@ export default function CameraScreen({ navigation }) {
         url: "https://transbraille.herokuapp.com/translate/",
         method: "POST",
         data: {
-          braille: imageData
+          braille: imagebase64
         }
       })
 
@@ -106,12 +109,52 @@ export default function CameraScreen({ navigation }) {
     }
   }
 
+  function retake() {
+    setImageURI(null);
+    setImageBase64(null);
+  }
+
   function generatePlaceholderArray(length) {
     return Array.from({ length: length }, (v, k) => k + 1);
   }
 
   return (
     <View style={styles.container}>
+      <Modal
+          animationType="slide"
+          transparent={false}
+          visible={imageURI ? true : false}
+          style={{ backgroundColor: "red" }}
+          styl
+          onRequestClose={() => {
+        Alert.alert('Modal has been closed.');
+      }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <Image source={{ uri: imageURI }} style={{ width: "100%", height: 300, resizeMode: "contain" }} />
+          <View style={styles.buttonGroupContainer}>
+            <Button
+              type="solid"
+              icon={{
+                name: "x",
+                type: "feather",
+                color: "white"
+              }}
+              buttonStyle={{ backgroundColor: "red" }}
+              onPress={() => retake()}
+            />
+            <Button
+              type="solid"
+              icon={{
+                name: "check",
+                type: "feather",
+                color: "white"
+              }}
+              buttonStyle={{ backgroundColor: "#27AE60" }}
+              onPress={() => translate()}
+            />
+          </View>
+        </View>
+      </Modal>
       {isLoading ? <ActivityIndicator size="large" color={Theme.colors.primaryLight} /> : (
        <>
         {showSettings ? (
@@ -170,6 +213,14 @@ const styles = StyleSheet.create({
   camera: {
     width: "100%",
     height: 300,
+  },
+  buttonGroupContainer: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+    alignItems: "center",
+    width: "30%",
+    paddingVertical: 16
   },
   grid: {
     borderWidth: 1,
