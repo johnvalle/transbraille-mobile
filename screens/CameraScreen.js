@@ -2,6 +2,7 @@ import React from 'react';
 import axios from "axios"
 import { StyleSheet, Text, View, Alert, Dimensions, ActivityIndicator, Modal, Image } from 'react-native';
 import * as ImageManipulator from 'expo-image-manipulator';
+import * as MediaLibrary from 'expo-media-library';
 import { Camera } from "expo-camera"
 import { Button } from "react-native-elements";
 import Slider from '@react-native-community/slider';
@@ -21,8 +22,9 @@ export default function CameraScreen({ navigation }) {
 
   React.useEffect(() => {
     (async () => {
-      const { status } = await Camera.requestPermissionsAsync();
-      setHasPermission(status === 'granted');
+      const library = await MediaLibrary.requestPermissionsAsync();
+      const camera = await Camera.requestPermissionsAsync();
+      setHasPermission(camera.status === "granted" && library.status === "granted");
     })();
     
   }, []);
@@ -86,6 +88,7 @@ export default function CameraScreen({ navigation }) {
   }
 
   async function translate() {
+    await MediaLibrary.createAssetAsync(imageURI)
     setIsLoading(true);
     setImageURI(null);
     try {
@@ -183,7 +186,7 @@ export default function CameraScreen({ navigation }) {
             />
           </>
         ):(
-          <Camera onCameraReady={readyCam} ref={cameraRef} style={styles.camera} type={Camera.Constants.Type.back} ratio={ratio}>
+          <Camera ref={cameraRef} style={styles.camera} type={Camera.Constants.Type.back}>
             <View style={{ display: "flex", flexDirection: "row" }}>
               {[...generatePlaceholderArray(topGrid)].map((_, idx) => (
                 <View key={idx}>
