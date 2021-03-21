@@ -101,7 +101,7 @@ export default function CameraScreen({ navigation }) {
           'Access-Control-Allow-Origin': '*',
           'Content-Type': 'application/json',
         },
-        url: "https://transbraille.herokuapp.com/translate/",
+        url: `https://transbraille.herokuapp.com/translate-${language}/`,
         method: "POST",
         data: {
           braille: imagebase64
