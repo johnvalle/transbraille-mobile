@@ -4,7 +4,7 @@
     "slug": "transbraille",
     "version": "1.0.0",
     "orientation": "landscape",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon-2.png",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "cover",
@@ -21,7 +21,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon-2.png",
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.app.transbraillele"
