@@ -4,8 +4,7 @@ import { StyleSheet, Text, View, Alert, Dimensions, ActivityIndicator, Modal, Im
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as MediaLibrary from 'expo-media-library';
 import { Camera } from "expo-camera"
-import { Button } from "react-native-elements";
-import Slider from '@react-native-community/slider';
+import { Button, CheckBox } from "react-native-elements";
 
 import Theme from '../Theme';
 
@@ -13,10 +12,10 @@ export default function CameraScreen({ navigation }) {
   const [hasPermission, setHasPermission] = React.useState(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [showSettings, setShowSettings] = React.useState(false);
-  const [topGrid, setTopGrid] = React.useState(28);
-  const [bottomGrid, setBottomGrid] = React.useState(10);
+  const [language, setLanguage] = React.useState("english");
   const [imageURI, setImageURI] = React.useState(null);
   const [imagebase64, setImageBase64] = React.useState(null);
+  const [translation, setTranslation] = React.useState(null);
 
   const cameraRef = React.useRef();
 
@@ -25,9 +24,14 @@ export default function CameraScreen({ navigation }) {
       const library = await MediaLibrary.requestPermissionsAsync();
       const camera = await Camera.requestPermissionsAsync();
       setHasPermission(camera.status === "granted" && library.status === "granted");
-    })();
-    
+    })();  
   }, []);
+
+  React.useEffect(() => {
+    if (imageURI && imagebase64) {
+      translate()
+    }
+  }, [imageURI, imagebase64])
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -44,11 +48,11 @@ export default function CameraScreen({ navigation }) {
             onPress={() => takePicture()}
           />
           <Button
-            type="clear"
+            type={showSettings ? "solid" : "clear"}
             icon={{
               name: "settings",
               type: "feather",
-              color: "black"
+              color: showSettings ? "white" : "black"
             }}
             onPress={() => setShowSettings(!showSettings)}
             containerStyle={{ marginHorizontal: 12 }}
@@ -103,19 +107,14 @@ export default function CameraScreen({ navigation }) {
           braille: imagebase64
         }
       })
-
       if (response.data) {
-        Alert.alert(response.data?.data.toString())
+        // Alert.alert(response.data?.data.toString())
+        setTranslation(response.data?.data?.toString());
       }
       setIsLoading(false);
     } catch (error) {
       console.error(error)
     }
-  }
-
-  function retake() {
-    setImageURI(null);
-    setImageBase64(null);
   }
 
   function generatePlaceholderArray(length) {
@@ -124,82 +123,46 @@ export default function CameraScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Modal
-          animationType="slide"
-          transparent={false}
-          visible={imageURI ? true : false}
-          style={{ backgroundColor: "red" }}
-          styl
-          onRequestClose={() => {
-        Alert.alert('Modal has been closed.');
-      }}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <Image source={{ uri: imageURI }} style={{ width: "100%", height: 300, resizeMode: "contain" }} />
-          <View style={styles.buttonGroupContainer}>
-            <Button
-              type="solid"
-              icon={{
-                name: "x",
-                type: "feather",
-                color: "white"
-              }}
-              buttonStyle={{ backgroundColor: "red" }}
-              onPress={() => retake()}
-            />
-            <Button
-              type="solid"
-              icon={{
-                name: "check",
-                type: "feather",
-                color: "white"
-              }}
-              buttonStyle={{ backgroundColor: "#27AE60" }}
-              onPress={() => translate()}
-            />
-          </View>
-        </View>
-      </Modal>
       {isLoading ? <ActivityIndicator size="large" color={Theme.colors.primaryLight} /> : (
        <>
         {showSettings ? (
           <>
-            <Text>{topGrid}x{bottomGrid}</Text>
-            <Slider
-              style={{ width: 200, height: 40 }}
-              minimumValue={1}
-              maximumValue={30}
-              minimumTrackTintColor="green"
-              maximumTrackTintColor="black"
-              step={1}
-              value={topGrid}
-              onValueChange={(val) => setTopGrid(val)}
+            <Text>Select a language</Text>
+            <CheckBox
+              center
+              title='English'
+              checkedIcon='dot-circle-o'
+              uncheckedIcon='circle-o'
+              checked={language === "english"}
+              onPress={() => setLanguage("english")}
             />
-            <Slider
-              style={{ width: 200, height: 40 }}
-              minimumValue={1}
-              maximumValue={20}
-              minimumTrackTintColor="green"
-              maximumTrackTintColor="black"
-              step={1}
-              value={bottomGrid}
-              onValueChange={(val) => setBottomGrid(val)}
+            <CheckBox
+              center
+              title='Filipino'
+              checkedIcon='dot-circle-o'
+              uncheckedIcon='circle-o'
+              checked={language === "filipino"}
+              onPress={() => setLanguage("filipino")}
             />
           </>
         ):(
-          <Camera ref={cameraRef} style={styles.camera} type={Camera.Constants.Type.back}>
-            <View style={{ display: "flex", flexDirection: "row" }}>
-              {[...generatePlaceholderArray(topGrid)].map((_, idx) => (
-                <View key={idx}>
-                  {[...generatePlaceholderArray(bottomGrid)].map((_, idx) => <View key={idx} style={{
-                    borderWidth: 1,
-                    borderColor: "white",
-                    width: Dimensions.get("window").width / topGrid,
-                    height: 360 / (bottomGrid + 2)
-                  }} />)}
-                </View>
-              ))}
-            </View>
-          </Camera>
+          <>
+            <Camera ref={cameraRef} style={styles.camera} type={Camera.Constants.Type.back}>
+              <View style={{ display: "flex", flexDirection: "row" }}>
+                {[...generatePlaceholderArray(15)].map((_, idx) => (
+                  <View key={idx}>
+                    {[...generatePlaceholderArray(3)].map((_, idx) => <View key={idx} style={{
+                      borderWidth: 1,
+                      borderColor: "white",
+                      width: Dimensions.get("window").width / 15,
+                      height: Dimensions.get("window").height / 6
+                    }} />)}
+                  </View>
+                ))}
+              </View>
+            </Camera>
+            <Text style={styles.translation}>{translation ? `Translation: ${translation}`: "No image captured yet."}</Text>
+          </>
         )}
        </>
       )}
@@ -215,8 +178,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   camera: {
+    position: "absolute",
+    top: 0,
     width: "100%",
-    height: 300,
+    height: Dimensions.get("window").height / 2,
   },
   buttonGroupContainer: {
     display: "flex",
@@ -226,10 +191,8 @@ const styles = StyleSheet.create({
     width: "30%",
     paddingVertical: 16
   },
-  grid: {
-    borderWidth: 1,
-    borderColor: "white",
-    width: Dimensions.get("window").width / 28,
-    height: 360 / 12
+  translation: {
+    position: "absolute",
+    bottom: 50
   }
 });
