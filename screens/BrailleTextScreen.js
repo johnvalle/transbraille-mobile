@@ -8,7 +8,6 @@ export default function BrailleTextScreen() {
   const [data, setData] = React.useState([]);
   const [selectedIdx, setSelectedIdx] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(false);
-
   async function fetchDB(query) {
     const response = await axios({
       headers: {
@@ -21,21 +20,54 @@ export default function BrailleTextScreen() {
     return response;
   }
 
+  function sortAlphabetically (a, b) {
+    return a?.fields?.text < b?.fields?.text ? -1 : (a?.fields?.text > b?.fields?.text ? 1 : 0)
+  }
+
+  function renderCard(fields, pk) {
+    return (
+      <View style={styles.card} key={pk}>
+        <View style={{ alignSelf: "flex-end" }}>
+          <View style={styles.row}>
+            <View style={[styles.circle, fields?.braille.split("")[0] === "1" ? styles.shaded : {}]}></View>
+            <View style={[styles.circle, fields?.braille.split("")[1] === "1" ? styles.shaded : {}]}></View>
+          </View>
+          <View style={styles.row}>
+            <View style={[styles.circle, fields?.braille.split("")[2] === "1" ? styles.shaded : {}]}></View>
+            <View style={[styles.circle, fields?.braille.split("")[3] === "1" ? styles.shaded : {}]}></View>
+          </View>
+          <View style={styles.row}>
+            <View style={[styles.circle, fields?.braille.split("")[4] === "1" ? styles.shaded : {}]}></View>
+            <View style={[styles.circle, fields?.braille.split("")[5] === "1" ? styles.shaded : {}]}></View>
+          </View>
+        </View>
+        <View>
+          <Text style={styles.title}>{fields?.text}</Text>
+          <Text style={styles.subtitle}>{fields?.braille}</Text>
+        </View>
+      </View>
+    )
+  }
+
+  async function update(idx) {
+    setIsLoading(true);
+    const toFetch = ["letter", "number", "word"];
+    const response = await fetchDB(toFetch[idx]);
+    setData(response.data?.data);
+    setIsLoading(false);
+  }
+
   React.useEffect(() => {
-    (async () => {
-      setIsLoading(true);
-      const toFetch = ["letter", "number", "word"];
-      const response = await fetchDB(toFetch[selectedIdx]);
-      console.log(response.data)
-      setData(response.data?.data);
-      setIsLoading(false);
-    })();
-  }, [selectedIdx])
+    update(selectedIdx)
+  }, [])
 
   return (
     <>
       <ButtonGroup
-        onPress={(idx) => setSelectedIdx(idx)}
+        onPress={(idx) => {
+          update(idx);
+          setSelectedIdx(idx)
+        }}
         selectedIndex={selectedIdx}
         buttons={["Letters", "Numbers", "Words"]}
         containerStyle={{ height: 40 }}
@@ -44,28 +76,7 @@ export default function BrailleTextScreen() {
 
         {isLoading ? <ActivityIndicator size="large" color={Theme.colors.primaryLight} /> : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {data?.length > 0 && data.map(({ fields, pk }) => (
-              <View style={styles.card} key={pk}>
-                <View style={{ alignSelf: "flex-end" }}>
-                  <View style={styles.row}>
-                    <View style={[styles.circle, fields?.braille.split("")[0] === "1" ? styles.shaded : {}]}></View>
-                    <View style={[styles.circle, fields?.braille.split("")[1] === "1" ? styles.shaded : {}]}></View>
-                  </View>
-                  <View style={styles.row}>
-                    <View style={[styles.circle, fields?.braille.split("")[2] === "1" ? styles.shaded : {}]}></View>
-                    <View style={[styles.circle, fields?.braille.split("")[3] === "1" ? styles.shaded : {}]}></View>
-                  </View>
-                  <View style={styles.row}>
-                    <View style={[styles.circle, fields?.braille.split("")[4] === "1" ? styles.shaded : {}]}></View>
-                    <View style={[styles.circle, fields?.braille.split("")[5] === "1" ? styles.shaded : {}]}></View>
-                  </View>
-                </View>
-                <View>
-                  <Text style={styles.title}>{fields?.text}</Text>
-                  <Text style={styles.subtitle}>{fields?.braille}</Text>
-                </View>
-              </View>
-            ))}
+            {data?.length > 0 && (selectedIdx === 0 || selectedIdx === 2) ? data.sort(sortAlphabetically).map(({ fields, pk }) => renderCard(fields, pk)) : data.map(({ fields, pk }) => renderCard(fields, pk))}
           </ScrollView>
         )}
       </View>
