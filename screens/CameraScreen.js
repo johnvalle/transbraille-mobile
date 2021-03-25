@@ -95,26 +95,21 @@ export default function CameraScreen({ navigation }) {
     await MediaLibrary.createAssetAsync(imageURI)
     setIsLoading(true);
     setImageURI(null);
-    try {
-      const response = await axios({
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Content-Type': 'application/json',
-        },
-        url: `https://transbraille.herokuapp.com/translate-${language}/`,
-        method: "POST",
-        data: {
-          braille: imagebase64
-        }
-      })
-      if (response.data) {
-        // Alert.alert(response.data?.data.toString())
-        setTranslation(response.data?.data?.toString());
+    const response = await axios({
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json',
+      },
+      url: `http://192.168.0.18:8000/translate-${language}/`,
+      method: "POST",
+      data: {
+        braille: imagebase64
       }
-      setIsLoading(false);
-    } catch (error) {
-      console.error(error)
+    })
+    if (response.data) {
+      setTranslation(response.data?.data?.toString());
     }
+    setIsLoading(false);
   }
 
   function generatePlaceholderArray(length) {
@@ -149,13 +144,13 @@ export default function CameraScreen({ navigation }) {
           <>
             <Camera ref={cameraRef} style={styles.camera} type={Camera.Constants.Type.back}>
               <View style={{ display: "flex", flexDirection: "row" }}>
-                {[...generatePlaceholderArray(15)].map((_, idx) => (
+                {[...generatePlaceholderArray(12)].map((_, idx) => (
                   <View key={idx}>
-                    {[...generatePlaceholderArray(3)].map((_, idx) => <View key={idx} style={{
+                    {[...generatePlaceholderArray(6)].map((_, idx) => <View key={idx} style={{
                       borderWidth: 1,
                       borderColor: "white",
-                      width: Dimensions.get("window").width / 15,
-                      height: Dimensions.get("window").height / 6
+                      width: 72,
+                      height: 99
                     }} />)}
                   </View>
                 ))}
