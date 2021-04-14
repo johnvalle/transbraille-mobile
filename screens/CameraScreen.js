@@ -100,7 +100,7 @@ export default function CameraScreen({ navigation }) {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
       },
-      url: `http://192.168.0.18:8000/translate-${language}/`,
+      url: `https://transbraille.herokuapp.com/translate-${language}/`,
       method: "POST",
       data: {
         braille: imagebase64
@@ -144,13 +144,13 @@ export default function CameraScreen({ navigation }) {
           <>
             <Camera ref={cameraRef} style={styles.camera} type={Camera.Constants.Type.back}>
               <View style={{ display: "flex", flexDirection: "row" }}>
-                {[...generatePlaceholderArray(12)].map((_, idx) => (
+                {[...generatePlaceholderArray(18)].map((_, idx) => (
                   <View key={idx}>
-                    {[...generatePlaceholderArray(6)].map((_, idx) => <View key={idx} style={{
+                    {[...generatePlaceholderArray(4)].map((_, idx) => <View key={idx} style={{
                       borderWidth: 1,
                       borderColor: "white",
-                      width: 72,
-                      height: 99
+                      width: 50,
+                      height: 60
                     }} />)}
                   </View>
                 ))}
