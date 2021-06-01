@@ -3,7 +3,7 @@
     "name": "transbraille",
     "slug": "transbraille",
     "version": "1.0.0",
-    "orientation": "landscape",
+    "orientation": "portrait",
     "icon": "./assets/icon-2.png",
     "splash": {
       "image": "./assets/splash.png",

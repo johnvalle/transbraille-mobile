@@ -1,6 +1,6 @@
 import React from 'react'
 import { ScrollView, View, Text, StyleSheet, ActivityIndicator } from "react-native"; 
-import { ButtonGroup } from "react-native-elements";
+import { ButtonGroup, CheckBox } from "react-native-elements";
 import axios from "axios";
 import Theme from '../Theme';
 
@@ -8,13 +8,14 @@ export default function BrailleTextScreen() {
   const [data, setData] = React.useState([]);
   const [selectedIdx, setSelectedIdx] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [language, setLanguage] = React.useState("eng");
   async function fetchDB(query) {
     const response = await axios({
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
       },
-      url: `https://transbraille.herokuapp.com/transbraille?q=${query}`,
+      url: `http://192.168.0.18:8000/transbraille?q=${query}&lang=${language}`,
       method: "GET",
     });
     return response;
@@ -61,6 +62,10 @@ export default function BrailleTextScreen() {
     update(selectedIdx)
   }, [])
 
+  React.useEffect(() => {
+    update(selectedIdx)
+  }, [language])
+
   return (
     <>
       <ButtonGroup
@@ -72,14 +77,33 @@ export default function BrailleTextScreen() {
         buttons={["Letters", "Numbers", "Words"]}
         containerStyle={{ height: 40 }}
       />
-      <View style={styles.container}>
-
-        {isLoading ? <ActivityIndicator size="large" color={Theme.colors.primaryLight} /> : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {data?.length > 0 && (selectedIdx === 0 || selectedIdx === 2) ? data.sort(sortAlphabetically).map(({ fields, pk }) => renderCard(fields, pk)) : data.map(({ fields, pk }) => renderCard(fields, pk))}
-          </ScrollView>
-        )}
-      </View>
+      {selectedIdx === 2 && (
+        <View>
+          <CheckBox
+            center
+            title='English'
+            checkedIcon='dot-circle-o'
+            uncheckedIcon='circle-o'
+            checked={language === "eng"}
+            onPress={() => setLanguage("eng")}
+          />
+          <CheckBox
+            center
+            title='Filipino'
+            checkedIcon='dot-circle-o'
+            uncheckedIcon='circle-o'
+            checked={language === "fil"}
+            onPress={() => setLanguage("fil")}
+          />
+        </View>
+      )}
+      <ScrollView>
+        <View style={styles.container}>
+          {isLoading ? <ActivityIndicator size="large" color={Theme.colors.primaryLight} /> : (
+            data?.length > 0 && (selectedIdx === 0 || selectedIdx === 2) ? data.sort(sortAlphabetically).map(({ fields, pk }) => renderCard(fields, pk)) : data.map(({ fields, pk }) => renderCard(fields, pk))
+          )}
+        </View>
+    </ScrollView>
     </>
   )
 }
@@ -87,9 +111,9 @@ export default function BrailleTextScreen() {
 const styles = StyleSheet.create({
   card: {
     height: 150,
-    minWidth: 120,
+    width: 120,
     backgroundColor: Theme.colors.white,
-    marginRight: 16,
+    margin: 16,
     borderRadius: 12,
     padding: 12,
     display: "flex",
@@ -98,12 +122,14 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    flexWrap: "wrap",
     padding: 20
   },
   title: {
-    fontSize: 36,
+    fontSize: 24,
     fontWeight: "bold",
     color: Theme.colors.primaryDark
   },
