@@ -15,7 +15,7 @@ export default function BrailleTextScreen() {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
       },
-      url: `http://192.168.0.18:8000/transbraille?q=${query}&lang=${language}`,
+      url: `https://transbraille.herokuapp.com/transbraille?q=${query}&lang=${language}`,
       method: "GET",
     });
     return response;
